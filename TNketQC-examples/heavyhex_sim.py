@@ -281,12 +281,25 @@ def main():
 
 	GRID = 'PRETZEL'
 	
+	#
+	# File to hold the final PEPS TN
+	#
 	OUT_FNAME = 'final-PEPS.pkl'
 
-	# Qedma's proposal
+	# 
+	# "Trotter" step angles. 
+	# Each step consists of 3 layers. For *each* layer we apply:
+	#
+	# 1. Rx(RX_ANGLE/3)   for all qubits
+	# 2. Rz(RZ_ANGLE/3)   for all qubits
+	# 3. Rzz(RZ_ANGLE)    for all (i,j) pairs in that layer
+	#
+	
 	RZZ_ANGLE = 5.2
-	RX_ANGLE = 1.52
-	RZ_ANGLE = 0.87
+	RX_ANGLE  = 1.52
+	RZ_ANGLE  = 0.87
+	
+	# Initial angles Ry. Put None for starting from |0>^n
 	THETA_INIT = 2.6
 
 	STEPS = 6   # Total number of steps
@@ -297,9 +310,12 @@ def main():
 	L2THRESH = 1e-7  # The L_2 truncation parameter. When None, then
 	                 # truncation is done only by the bond dimension.
 
+	#
+	# General BP parameters
+	#
 	BP_MAX_ITER = 50
-	BP_DELTA = 1e-5
-	BP_DAMPING = 0.0
+	BP_DELTA    = 1e-5
+	BP_DAMPING  = 0.0
 
 	#
 	# Set the numpy precision. Either double-precision 'DP'
@@ -322,13 +338,6 @@ def main():
 	e_list, e_dict, angles_list, layers = create_ibm_grid(GRID)
 
 	num_qubits = len(e_list)
-	
-	print(f"Simulating using grid {GRID} with {num_qubits} qubits")
-	print(f"rzz={RZZ_ANGLE:.3f}_rx={RX_ANGLE:.3f}_rz={RZ_ANGLE:.3f}_init={THETA_INIT:.3f}_{D_MAX=}")
-	
-
-	print("\n\n")
-
 
 	#
 	# Initialize the TN to |0>^n state
@@ -368,7 +377,7 @@ def main():
 	print()
 	print(f"      theta_x: {RX_ANGLE:.6g}  theta_z: {RZ_ANGLE:.6g}  "\
 		f"theta_zz: {RZZ_ANGLE:.6g} ")
-	print(f"      Initial-theta: {THETA_INIT:.6g}")
+	print(f"      Initial Ry theta: {THETA_INIT}")
 	print()
 	print(f"      Final PEPS TN is written to file: {OUT_FNAME}")
 	print()
@@ -394,10 +403,10 @@ def main():
 	#
 
 	BP_params = {}
-	BP_params['m_list'] = 'U'
+	BP_params['m_list']      = 'U'   # uniform initial BP messages
 	BP_params['BP_max_iter'] = BP_MAX_ITER
-	BP_params['BP_delta'] = BP_DELTA
-	BP_params['BP_damping'] = BP_DAMPING
+	BP_params['BP_delta']    = BP_DELTA
+	BP_params['BP_damping']  = BP_DAMPING
 
 	#
 	# Finally, apply the circuit.
