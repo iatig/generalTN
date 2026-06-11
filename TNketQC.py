@@ -1475,7 +1475,7 @@ def apply_circuit(TN_params, BP_params, glist, normalize_PEPS=True):
 				t0 = time.time()
 				if gname=='*vgauge':
 					print()
-					print("            ----  Moving to Vidal gauge  ----")
+					print("            ----  Moving to Vidal gauge  ----\n")
 
 					print("Running BP for the Vidal gauge...")
 
@@ -1493,7 +1493,7 @@ def apply_circuit(TN_params, BP_params, glist, normalize_PEPS=True):
 
 				else:
 					print()
-					print("        ----  Moving to Vidal gauge  (no BP)  ----")
+					print("        ----  Moving to Vidal gauge  (no BP)  ----\n")
 
 				T_list, w_dict = VG_find_VG_from_BP(T_list, e_dict, m_list)
 
@@ -1515,7 +1515,7 @@ def apply_circuit(TN_params, BP_params, glist, normalize_PEPS=True):
 
 				t0 = time.time()
 				print()
-				print("            ----  Running BP  ----")
+				print("            ----  Running BP  ----\n")
 
 				m_list, BP_err, BP_iter_no = qbp(T_list, e_list, e_dict, initial_m='U', \
 					max_iter=BP_max_iter, delta=BP_delta, damping=BP_damping)
@@ -1538,7 +1538,7 @@ def apply_circuit(TN_params, BP_params, glist, normalize_PEPS=True):
 
 
 				print()
-				print("            ----  Calling external function  ----")
+				print("            ----  Calling external function  ----\n")
 
 
 				ext_func = params['ext_func']

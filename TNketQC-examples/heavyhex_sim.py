@@ -7,8 +7,26 @@
 #                        ===============
 #
 # Use PEPS-BP to simulate a "Trotter" circuit on an IBM-like heavyhex 
-# grid
+# grid in the shape of a PRETZEL.
 #
+# The circuit is made of an initial Ry rotation of all qubits, followed
+# by T "Trotter steps". A step of the Trotter circuit is described in 
+# the one_Ising_Trotter_step() function. Using the partitioning of the
+# heavyhex into 3 layers, it goes over the layer3, and in each layer:
+#
+#	1. Apply Rx(theta_x/L) and Rz(theta_z/L) on all qubits i
+#
+#	2. Rzz(theta_z) on all (i,j) pairs in the layer
+#
+# After each layer we preform BP to compress the PEPS. After each 
+# Trotter step we re-gauge the system to Vidal gauge (for numerical 
+# stability) and in addition calculate the intermediate <Z_i> expectation
+# values for each qubit.
+#
+# 
+# The final PEPS TN is saved to a file.
+# 
+# 
 # History:
 # --------
 #
@@ -61,6 +79,7 @@ def local_avs(TN_params, BP_params, glist, t, func_params):
 	It calculates the local <Z_i> averages for all the qubits. This
 	is done by using the current BP messages to calculate the local 1-RDM
 	and from that calculate <Z_i> := Tr(rho_i Z_i)
+	
 
 	"""
 
@@ -279,15 +298,26 @@ def main():
 	np.seterr(all='raise')
 	np.seterr(under='ignore')
 
-	GRID = 'PRETZEL'
+	#
+	# Determine the heavyhex grid we're using. Different grids exist
+	# in the function ibm_grid.create_ibm_grid(). 
+	#
+	# A PRETZEL grid uses 28 qubits.
+	#
+	GRID = 'PRETZEL'  
 	
 	#
 	# File to hold the final PEPS TN
 	#
 	OUT_FNAME = 'final-PEPS.pkl'
 
+	#
+	# Set the initial Ry rotation angle. Put None for starting from |0>^n
+	#
+	THETA_INIT = 2.6
+
 	# 
-	# "Trotter" step angles. 
+	# Set the "Trotter" step angles. 
 	# Each step consists of 3 layers. For *each* layer we apply:
 	#
 	# 1. Rx(RX_ANGLE/3)   for all qubits
@@ -299,12 +329,10 @@ def main():
 	RX_ANGLE  = 1.52
 	RZ_ANGLE  = 0.87
 	
-	# Initial angles Ry. Put None for starting from |0>^n
-	THETA_INIT = 2.6
 
 	STEPS = 6   # Total number of steps
 
-	D_MAX = 64  # D_MAX = chi --- the maximal bond dim
+	D_MAX = 48  # D_MAX = chi --- the maximal bond dim
 	
 
 	L2THRESH = 1e-7  # The L_2 truncation parameter. When None, then
@@ -337,7 +365,7 @@ def main():
 	#
 	e_list, e_dict, angles_list, layers = create_ibm_grid(GRID)
 
-	num_qubits = len(e_list)
+	num_qubits = len(e_list) 
 
 	#
 	# Initialize the TN to |0>^n state
@@ -345,8 +373,18 @@ def main():
 	T_list = create_initial_T_list(e_list, mode='|0>')
 
 	#
-	# Create the circuit we are about to simulate
+	# Create the circuit we are about to simulate. It is essentially 
+	# a list of tuples (gname, i, e, params), where:
 	#
+	# gname  = A string with the name of gate 
+	# i      = The qubit idx it acts on (if it is a 1-local gate)
+	# e      = The edge e=(i,j) it acts on (it it is a 2-local gate)
+	# params = Optional parameters for the gate (like rotation angle)
+	#
+	# But there can also be gates like ('*compress', None, None, None)
+	# which tell us to compress the PEPS at that point.
+	#
+	
 	glist = create_Ising_Trotter_circ(
 		e_list,
 		e_dict,
@@ -413,6 +451,9 @@ def main():
 	#
 	T_list = apply_circuit(TN_params, BP_params, glist)
 
+	#
+	# Get the (heuristic) final L2 truncation error and fidelity
+	#
 	total_err   = TN_params['total_err']
 	total_f_sim = TN_params['total_f_sim']
 
@@ -427,8 +468,6 @@ def main():
 	print(f"  [*] Final fidelity:         {total_f_sim:.6g}")
 	print()
 
-	
-	
 	print(f"  Saving final TN to file {OUT_FNAME}")
 	
 	fout = open(OUT_FNAME, 'wb')
