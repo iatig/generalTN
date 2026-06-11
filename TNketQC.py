@@ -126,6 +126,12 @@ def TNketQC_initialize(mode='DP'):
 
 	Set some global variables used as gates, as-well as the overall
 	precision of the simulation.
+	
+	Note the global parameter PRECISION_MODE defines the global precision
+	of the simulator (either DP or SP). It is used whenever new tensors
+	are formed from scratch:
+	(*) In the create_initial_T_list() function
+	(*) In the get_gate() function
 
 	Input Parameters:
 	------------------
@@ -133,6 +139,9 @@ def TNketQC_initialize(mode='DP'):
 	mode --- The global precision of the simulation:
 	         'SP' - Single precision - either float32 or complex64
 	         'DP' - Double precision - either float64 or complex128
+	         
+	Output: None
+	-------
 
 	"""
 
@@ -243,6 +252,12 @@ def create_initial_T_list(e_list, mode='|0>'):
 	"""
 
 	T_list = []
+
+	if not mode in ['|0>', 'random-ket', 'Id']:
+		print("\n")
+		print("Error in create_initial_T_list() function:")
+		print(f"mode = '{mode}' does not exist!")
+		exit(1)
 
 	for es in e_list:
 		k = len(es)
@@ -434,7 +449,7 @@ def get_gate(gname, params=None):
 
 
 		case _:
-			print(f"Error!  gate {gname} undefined")
+			print(f"Error in get_gate() function! gate {gname} is undefined")
 			exit(1)
 
 	#
@@ -1197,7 +1212,8 @@ def TN_size(T_list):
 
 	r"""
 
-	Calculates the total number of *bytes* that the TN occupies
+	Calculates the total number of *bytes* that the TN occupies and a 
+	string with the general bond-dim shape of each tensor.
 
 	"""
 
