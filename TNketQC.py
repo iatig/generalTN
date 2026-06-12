@@ -80,6 +80,9 @@
 #
 # 11-Jun-2026: Added support for rzz, rx, ry, h gates in 
 #              circuit_from_qasm_file
+#
+# 11-Jun-2026: Allow circuit_from_qasm_file to create e_list, e_dict
+#              on the fly.
 #              
 #
 ########################################################################
@@ -703,7 +706,7 @@ def find_edge(i, j, e_list, e_dict):
 # -------------------   circuit_from_qasm_file   -----------------------
 #
 
-def circuit_from_qasm_file(fname, e_list, e_dict):
+def circuit_from_qasm_file(fname, e_list=None, e_dict=None):
 	r"""
 	
 	Reads a QASM file and translates it into a circuit.
@@ -720,20 +723,48 @@ def circuit_from_qasm_file(fname, e_list, e_dict):
 	1. Any qubit q[i] should be smaller than len(e_list)
 	2. If a 2-qubits gate acts on q[i],q[j], then the TN has an edge e=(i,j).
 	
+	The function has two running modes:
+	(*) If e_list is given, then we check that every gate correspond
+	    to a existent qubits and edges.
+	(*) If e_list is not given, then e_list and e_dict are constructed
+	    on the fly.
+	
 	
 	Input Parameters:
 	------------------
 	fname          --- The QASM file name
-	e_list, e_dict --- TN structure
+	e_list, e_dict --- TN structure. If not given then they are constructed
+	                   on the fly
 	
 	Output:
 	-------
-	g_list --- The gates list of the circuit
+	Either:
+		g_list --- The gates list of the circuit
+	Or 
+		g_list, e_list, e_dict  (when e_list is not given as input)
 	
 	
 	"""
 	
-	n = len(e_list)
+	MAX_QUBITS = 10000
+	
+	
+	#
+	# See if e_list is given. If not then set construct_e_list=True
+	# and define a list all_es of all possible edges
+	#
+	if e_list is None:
+		e_list = [[] for i in range(MAX_QUBITS)]
+		construct_e_list = True
+		max_q = 0
+		all_es = []
+		
+	else:
+		construct_e_list = False
+		if e_dict is None:
+			e_dict = calc_e_dict(e_list)
+	
+		n = len(e_list)
 	
 	#
 	# Open the QASM file and read its lines to a list Lines
@@ -760,13 +791,24 @@ def circuit_from_qasm_file(fname, e_list, e_dict):
 			#
 			q1 = qubits[0]
 			
-			if q1>=n:
-				print("\n")
-				print("Error in circuit_from_qasm_file() function:")
-				print(f"1-local gate '{L}' in line {i} corresponds to a "\
-					f"non-existing qubit index {q1} "\
-					f"(there are at most {n} qubits in the TN)!")
-				exit(1)
+			if construct_e_list:
+				#
+				# If we're constructing e_list of the fly then see if we need
+				# to increase the total number of qubits
+				#
+				if q1>max_q:
+					max_q = q1
+			else:
+				#
+				# Otherwise, just check that it is an existent qubit
+				#
+				if q1>=n:
+					print("\n")
+					print("Error in circuit_from_qasm_file() function:")
+					print(f"1-local gate '{L}' in line {i} corresponds to a "\
+						f"non-existing qubit index {q1} "\
+						f"(there are at most {n} qubits in the TN)!")
+					exit(1)
 				
 			e = None
 		else:
@@ -776,20 +818,51 @@ def circuit_from_qasm_file(fname, e_list, e_dict):
 			
 			q1,q2 = qubits[0],qubits[1]
 			
-			e = find_edge(q1, q2, e_list, e_dict)
+			#
+			# Make sure q1<q2
+			#
+			if q1>q2:
+				q1,q2 = q2,q1
 			
-			if e is None:
-				print("\n")
-				print("Error in circuit_from_qasm_file() function:")
-				print(f"2-local gate '{L}' in line {i} corresponds to a "\
-					f"non-existing edge {e}!")
-				exit(1)
+			
+			if construct_e_list:
+				#
+				# If we're constructing e_list on the fly then create the 
+				# corresponding e, and see if we need to add it to e_list
+				# (if its the first time we encounter it)
+				#
+				e = f'e{q1}-{q2}'
+				if not e in all_es:
+					all_es.append(e)
+					e_list[q1].append(e)
+					e_list[q2].append(e)
+					
+				if q1>max_q:
+					max_q = q1
+					
+				if q2>max_q:
+					max_q = q2
+
+					
+			else:
+				e = find_edge(q1, q2, e_list, e_dict)
+				
+				if e is None:
+					print("\n")
+					print("Error in circuit_from_qasm_file() function:")
+					print(f"2-local gate '{L}' in line {i} corresponds to a "\
+						f"non-existing edge {e}!")
+					exit(1)
 				
 		
 		match gname:
 
 			case 'cx':
-				if qubits[0]<qubits[1]:
+				#
+				# We apply C-NOT where qubits[0] is the control and qubits[1] 
+				# is the target. 
+				#
+				if qubits[0]==q1:
 					g = ('CNOT01', None, e, None)
 				else:
 					g = ('CNOT10', None, e, None)
@@ -835,7 +908,19 @@ def circuit_from_qasm_file(fname, e_list, e_dict):
 				
 		glist.append(g)
 	
-	return glist
+	
+	if construct_e_list:
+		#
+		# If we're constructing e_list on the fly then truncate it up
+		# to the maximal qubit used, and calculate e_dict
+		#
+		e_list= e_list[:(max_q+1)]
+		e_dict = calc_e_dict(e_list)
+		
+		return glist, e_list, e_dict
+		
+	else:
+		return glist
 		
 
 
