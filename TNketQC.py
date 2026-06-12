@@ -77,6 +77,9 @@
 #              truncation error fidelity to TN_parms: 
 #              TN_params['total_err'], TN_params['total_f_sim']
 #              Also change the printout text 'Step' -> 'Gate'
+#
+# 11-Jun-2026: Added support for rzz, rx, ry, h gates in 
+#              circuit_from_qasm_file
 #              
 #
 ########################################################################
@@ -794,14 +797,26 @@ def circuit_from_qasm_file(fname, e_list, e_dict):
 			case 'cz':
 				g = ('cz', None, e, None)
 				
+			case 'rzz':
+				g = ('rzz', None, e, {'theta':param})
+				
 			case 'sx':
 				g = ('sx', q1, None, None)
 				
 			case 'rz':
 				g = ('rz', q1, None, {'theta':param})
+				
+			case 'rx':
+				g = ('rx', q1, None, {'theta':param})
+				
+			case 'ry':
+				g = ('ry', q1, None, {'theta':param})
 
 			case 'x':
 				g = ('x', q1, None, None)
+				
+			case 'h':
+				g = ('H', q1, None, None)
 				
 			case 'y':
 				g = ('y', q1, None, None)
