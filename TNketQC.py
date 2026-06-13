@@ -157,7 +157,7 @@ def TNketQC_initialize(mode='DP'):
 	"""
 
 	global CNOT01_gate, CNOT10_gate, H_gate, sZ_gate, sX_gate, \
-		sZdg_date, sXdg_date, T_gate, Paulis1arr, Paulis2arr, CZ_gate,\
+		sZdg_gate, sXdg_gate, T_gate, Paulis1arr, Paulis2arr, CZ_gate,\
 		PRECISION_MODE
 
 
@@ -177,8 +177,8 @@ def TNketQC_initialize(mode='DP'):
 	sZ_gate = diag([1,1j])
 	sX_gate = 0.5*array([ [1+1j, 1-1j], [1-1j, 1+1j]])
 	
-	sZdg_date = conj(sZ_gate.T)
-	sXdg_date = conj(sX_gate.T)
+	sZdg_gate = conj(sZ_gate.T)
+	sXdg_gate = conj(sX_gate.T)
 
 	T_gate = diag([1, exp(1j*pi/4)])
 
