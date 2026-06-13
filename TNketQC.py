@@ -83,6 +83,11 @@
 #
 # 11-Jun-2026: Allow circuit_from_qasm_file to create e_list, e_dict
 #              on the fly.
+#
+# 12-Jun-2026: Added support for 'sxdg', 'szdg' gates in 
+#              get_gate(), TNketQC_initialize() and support for 's', 
+#              'sxdg', 'sdg' gates in circuit_from_qasm_file(). 
+#              Also fix small regex bug in circuit_from_qasm_file().
 #              
 #
 ########################################################################
@@ -151,8 +156,9 @@ def TNketQC_initialize(mode='DP'):
 
 	"""
 
-	global CNOT01_gate, CNOT10_gate, H_gate, sZ_gate, sX_gate, T_gate, \
-		Paulis1arr, Paulis2arr, CZ_gate, PRECISION_MODE
+	global CNOT01_gate, CNOT10_gate, H_gate, sZ_gate, sX_gate, \
+		sZdg_date, sXdg_date, T_gate, Paulis1arr, Paulis2arr, CZ_gate,\
+		PRECISION_MODE
 
 
 	PRECISION_MODE=mode
@@ -170,6 +176,9 @@ def TNketQC_initialize(mode='DP'):
 
 	sZ_gate = diag([1,1j])
 	sX_gate = 0.5*array([ [1+1j, 1-1j], [1-1j, 1+1j]])
+	
+	sZdg_date = conj(sZ_gate.T)
+	sXdg_date = conj(sX_gate.T)
 
 	T_gate = diag([1, exp(1j*pi/4)])
 
@@ -365,8 +374,14 @@ def get_gate(gname, params=None):
 		case 'sx':
 			M = sX_gate
 
+		case 'sxdg':
+			M = sXdg_gate
+
 		case 'sz':
 			M = sZ_gate
+			
+		case 'szdg':
+			M = sZdg_gate
 
 		case 'T':
 			M = T_gate
@@ -659,7 +674,7 @@ def parse_qasm_line(line):
 
 	# Match gate with optional parameter and one or two qubits
 	# e.g. "cz q[6],q[5]" or "rz(pi/2) q[4]" or "sx q[2]"
-	pattern = r'(\w+)(?:\(([^)]*)\))?\s+q\[(\d+)\](?:,q\[(\d+)\])?'
+	pattern = r'(\w+)(?:\(([^)]*)\))?\s+q\[(\d+)\](?:,\s*q\[(\d+)\])?'
 	m = re.match(pattern, line)
 	if not m:
 			return None, None, None
@@ -785,6 +800,9 @@ def circuit_from_qasm_file(fname, e_list=None, e_dict=None):
 		if gname is None or qubits is None or gname in ['qreg', 'barrier', 'measure']:
 			continue
 			
+		print("At L=", L, "tuple: ", gname, qubits, param)
+		
+			
 		if len(qubits)==1:
 			#
 			# Its a 1-qubit gate
@@ -875,6 +893,16 @@ def circuit_from_qasm_file(fname, e_list=None, e_dict=None):
 				
 			case 'sx':
 				g = ('sx', q1, None, None)
+				
+			case 'sxdg':
+				g = ('sxdg', q1, None, None)
+
+			case 's':
+				g = ('sz', q1, None, None)
+				
+			case 'sdg':
+				g = ('szdg', q1, None, None)
+
 				
 			case 'rz':
 				g = ('rz', q1, None, {'theta':param})
