@@ -1727,8 +1727,8 @@ def apply_circuit(TN_params, BP_params, glist, normalize_PEPS=True):
 
 
 		if display_comp_msg:
-			print(f"<<< local-compression-err={err:10.3e}, local-fid={f_sim:10.6f}, "\
-				f"total-err={total_err:10.3e}, total_simulation_fid={total_f_sim:10.6f} >>>")
+			print(f"<<< local-compression-err={err:.6g}, local-fid={f_sim:.6g}, "\
+				f"total-err={total_err:.6g}, total_simulation_fid={total_f_sim:.6g} >>>")
 				
 		#
 		# Update the TN and BP params
