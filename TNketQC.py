@@ -800,8 +800,6 @@ def circuit_from_qasm_file(fname, e_list=None, e_dict=None):
 		if gname is None or qubits is None or gname in ['qreg', 'barrier', 'measure']:
 			continue
 			
-		print("At L=", L, "tuple: ", gname, qubits, param)
-		
 			
 		if len(qubits)==1:
 			#
@@ -1541,7 +1539,7 @@ def apply_circuit(TN_params, BP_params, glist, normalize_PEPS=True):
 				#
 				
 				print()
-				print(f"Running BP to get converged messages...")
+				print(f"Running BP for compression...")
 				print(f"BP params:  delta={BP_delta:.6g}  "\
 					f"max_iter={BP_max_iter}  damping={BP_damping:.6g}\n")
 				
