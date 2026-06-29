@@ -17,7 +17,7 @@
 #         |               |
 #         21              22
 #         |               |
-#         23  24  25  26  27
+#         23--24--25--26--27
 #
 #
 # We use the qubit indexing of the official IBM qubits MAP. Currently
