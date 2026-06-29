@@ -88,6 +88,9 @@
 #              get_gate(), TNketQC_initialize() and support for 's', 
 #              'sxdg', 'sdg' gates in circuit_from_qasm_file(). 
 #              Also fix small regex bug in circuit_from_qasm_file().
+#
+# 29-Jun-2026: In get_gate function: change gate name 'Id' -> 'id', 
+#              add gate 'h' as alias for 'H' and add gate 'rxx'.
 #              
 #
 ########################################################################
@@ -356,7 +359,7 @@ def get_gate(gname, params=None):
 
 	match gname:
 
-		case 'Id':
+		case 'id':
 			M = ID1
 
 		case 'x':
@@ -369,6 +372,9 @@ def get_gate(gname, params=None):
 			M = sigma_Z
 
 		case 'H':
+			M = H_gate
+			
+		case 'h':
 			M = H_gate
 
 		case 'sx':
@@ -434,6 +440,16 @@ def get_gate(gname, params=None):
 
 			M = cos(0.5*theta)*tensordot(ID1, ID1, 0) \
 				- 1j*sin(0.5*theta)*tensordot(sigma_Z, sigma_Z, 0)
+
+		case 'rxx':
+			#
+			# Rxx(theta) := exp(-0.5i*theta*XX)
+			#
+			theta = params['theta']
+
+			M = cos(0.5*theta)*tensordot(ID1, ID1, 0) \
+				- 1j*sin(0.5*theta)*tensordot(sigma_X, sigma_X, 0)
+
 
 
 		case 'u3':
