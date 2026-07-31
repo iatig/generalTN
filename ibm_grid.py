@@ -44,6 +44,11 @@
 #
 # 10-Jun-2026  Itai  Fix small bug in create_ibm_grid (added elif)
 #
+# 31-Jul-2026  Itai  Added 'Heron51q' option to create_ibm_grid (same
+#                    as Qedma's QA experiment). Removed the angles_list
+#                    output from create_ibm_grid. Make sure all edges
+#                    are of the form e{i}-{j} with i<j.
+#
 #
 ########################################################################
 
@@ -210,7 +215,9 @@ LAYERS_EAGLE_KYIV = [
 	[(2, 3), (5, 6), (9, 10), (11, 12), (14, 18), (4, 15), (8, 16), (19, 20), (21, 22), (26, 27), (28, 29), (30, 31), (24, 34), (35, 47), (38, 39), (40, 41), (42, 43), (44, 45), (48, 49), (53, 60), (54, 64), (57, 58), (62, 63), (65, 66), (67, 68), (69, 70), (71, 77), (74, 89), (75, 76), (79, 80), (81, 82), (84, 85), (86, 87), (90, 94), (91, 98), (83, 92), (93, 106), (99, 100), (101, 102), (96, 109), (110, 118), (104, 111), (108, 112), (113, 114), (116, 117), (121, 122), (123, 124), (125, 126)],
 	[(0, 1), (3, 4), (7, 8), (10, 11), (16, 26), (12, 17), (18, 19), (22, 23), (24, 25), (27, 28), (29, 30), (20, 33), (34, 43), (32, 36), (37, 38), (39, 40), (41, 42), (46, 47), (50, 51), (52, 56), (45, 54), (49, 55), (58, 59), (60, 61), (64, 65), (68, 69), (62, 72), (66, 73), (77, 78), (80, 81), (82, 83), (85, 86), (88, 89), (75, 90), (79, 91), (87, 93), (95, 96), (97, 98), (100, 101), (102, 103), (104, 105), (106, 107), (111, 122), (112, 126), (114, 115), (117, 118), (119, 120), (124, 125)]]
 
-Heron_51q = [[(32, 33), (38, 49), (50, 51), (39, 53), (57, 67), (68, 69), (58, 71), (72, 73), (59, 75), (78, 89), (90, 91), (79, 93), (94, 95), (97, 107), (108, 109), (98, 111), (112, 113), (99, 115), (29, 30)], [(31, 32), (47, 48), (49, 50), (51, 52), (53, 54), (55, 59), (67, 68), (69, 70), (71, 72), (73, 74), (87, 88), (89, 90), (91, 92), (93, 94), (95, 99), (107, 108), (109, 110), (111, 112), (113, 114)], [(30, 31), (29, 38), (33, 39), (48, 49), (52, 53), (47, 57), (51, 58), (70, 71), (74, 75), (69, 78), (73, 79), (88, 89), (92, 93), (87, 97), (91, 98), (110, 111), (114, 115), (54, 55)]]
+Heron_51q = [[(32, 33), (38, 49), (50, 51), (39, 53), (57, 67), (68, 69), (58, 71), (72, 73), (59, 75), (78, 89), (90, 91), (79, 93), (94, 95), (97, 107), (108, 109), (98, 111), (112, 113), (99, 115), (29, 30)], 
+	[(31, 32), (47, 48), (49, 50), (51, 52), (53, 54), (55, 59), (67, 68), (69, 70), (71, 72), (73, 74), (87, 88), (89, 90), (91, 92), (93, 94), (95, 99), (107, 108), (109, 110), (111, 112), (113, 114)], 
+	[(30, 31), (29, 38), (33, 39), (48, 49), (52, 53), (47, 57), (51, 58), (70, 71), (74, 75), (69, 78), (73, 79), (88, 89), (92, 93), (87, 97), (91, 98), (110, 111), (114, 115), (54, 55)]]
 
 Heron_56q = [[(108, 109), (99, 115), (127, 128), (78, 89), (113, 114), (91, 98),
 (132, 133), (151, 152), (87, 88), (106, 107), (92, 93), (111, 112),
@@ -250,6 +257,11 @@ def create_ibm_grid(grid_type):
 			n = 156
 			LAYERS = LAYERS_HERON_65q
 
+		case 'HERON_51q':
+			n = 156
+			LAYERS = Heron_51q
+
+
 		case 'HERON_65q_tree':
 			n = 156
 			LAYERS = LAYERS_HERON_65q_TREE
@@ -266,56 +278,43 @@ def create_ibm_grid(grid_type):
 			raise ValueError("grid_type not supported")
 	
 	
-	pre_e_list = [[] for i in range(n)]
+	pre_e_list = {}
 	
 	for layer in LAYERS:
 		for (i,j) in layer:
-			pre_e_list[i].append((i,j))
-			pre_e_list[j].append((i,j))
-	
-	
-	ang = [pi, 0, pi/2, 1.5*pi]  # Left/Right/Up/Down angles
-	
+			
+			#
+			# Make sure always i<j
+			#
+			if i>j:
+				i,j = j,i
+			
+			if i in pre_e_list:
+				pre_e_list[i].append( (i,j) )
+			else:
+				pre_e_list[i] = [(i,j)]
+				
+			if j in pre_e_list:
+				pre_e_list[j].append( (i,j) )
+			else:
+				pre_e_list[j] = [(i,j)]
+				
 	e_list = []
-	angles_list = []
-	for i,es in enumerate(pre_e_list):
+	
+	for i in range(n):
+		if i not in pre_e_list:
+			continue
+			
+		pre_es = pre_e_list[i]
 		
-		es_list = [None]*4
-		
-		for (i1,j1) in es:
+		es = []
+		for (i1,j1) in pre_es:
 
 			e = f'e{i1}-{j1}'
-			
-			#
-			# Decide if the edge is L/R/U/D. So first understand what is j.
-			#
-			if i==i1:
-				j=j1
-			else:
-				j=i1
-			
-			if j==i-1:
-				es_list[0] = e  # Left edge
-			elif j==i+1:
-				es_list[1] = e  # Right edge
-			elif j<i-1:
-				es_list[2] = e  # Up edge
-			elif j>i+1:
-				es_list[3] = e  # Down edge
-			else:
-				print("Error - unidentified edge at ",i,j)
-				exit(0)
-				
-		new_es = []
-		angles = []
-		for k in range(4):
-			if es_list[k] is not None:
-				new_es.append(es_list[k])
-				angles.append(ang[k])
-				
-		e_list.append(new_es)
-		angles_list.append(angles)
-				
+			es.append(e)
+		
+		if es != []:
+			e_list.append(es)
 			
 	e_dict = calc_e_dict(e_list)
 	
@@ -328,7 +327,7 @@ def create_ibm_grid(grid_type):
 		layers.append(L)
 	
 
-	return e_list, e_dict, angles_list, layers
+	return e_list, e_dict, layers
 
 
 #
