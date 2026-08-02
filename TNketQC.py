@@ -93,6 +93,12 @@
 #              add gate 'h' as alias for 'H' and add gate 'rxx'.
 #              
 #
+# 30-Jul-2026: In get_gate(): added synonym 'ID' to 'id' gate. Added 
+#              'gen1q', 'gen2q' gates. In apply_circuit, when applying 
+#              a Heisenberg gate (i.e., '@CNOT01'), then actually 
+#              apply O ==> U^\dagger O U (instead of U O U^dagger like 
+#              it was before).
+#
 ########################################################################
 
 
@@ -116,7 +122,7 @@ from BPSU import lazy_PEPS_truncation, apply_gate_to_PEPS, \
 	VG_find_VG_from_BP, VG_merge_SU_weights, contract_leg
 
 from TenQI import ID1, sigma_X, sigma_Y, sigma_Z, ketbra00, ketbra11, \
-	op_to_mat
+	op_to_mat, op_dagger
 
 
 #
@@ -361,6 +367,9 @@ def get_gate(gname, params=None):
 
 		case 'id':
 			M = ID1
+			
+		case 'ID':
+			M = ID1
 
 		case 'x':
 			M = sigma_X
@@ -391,6 +400,23 @@ def get_gate(gname, params=None):
 
 		case 'T':
 			M = T_gate
+			
+		case 'u3':
+			#
+			# u3 is an arbitrary 1-qubit rotation
+			#
+			theta0 = params['theta0']
+			theta1 = params['theta1']
+			theta2 = params['theta2']
+
+			M = array([ [cos(theta0/2), -exp(1j*theta2)*sin(theta0/2)], \
+				[exp(1j*theta1)*sin(theta0/2), exp(1j*(theta1+theta2))*cos(theta0/2)]])
+
+		case 'gen1q':
+			M = params['M']
+			
+			
+			
 
 		case 'rXY_ZField':
 			#
@@ -452,16 +478,6 @@ def get_gate(gname, params=None):
 
 
 
-		case 'u3':
-			#
-			# u3 is an arbitrary 1-qubit rotation
-			#
-			theta0 = params['theta0']
-			theta1 = params['theta1']
-			theta2 = params['theta2']
-
-			M = array([ [cos(theta0/2), -exp(1j*theta2)*sin(theta0/2)], \
-				[exp(1j*theta1)*sin(theta0/2), exp(1j*(theta1+theta2))*cos(theta0/2)]])
 
 		case 'r_AFH':
 			#
@@ -483,6 +499,11 @@ def get_gate(gname, params=None):
 			M_mat = expm(-1j*h_mat)
 
 			M = mat_to_op(M_mat)
+
+
+		case 'gen2q':
+			M = params['M']
+			
 
 
 		case _:
@@ -1025,7 +1046,7 @@ def calc_RDM1(v, T_list, e_list, e_dict, m_list):
 	"""
 
 	Given a ket TN and a set of converged BP messages, use these messages
-	to approximate the 1-qubit RDM of a vertex v.
+	to approximate the 1-local RDM of a vertex v.
 
 	Input Parameters:
 	------------------
@@ -1037,7 +1058,7 @@ def calc_RDM1(v, T_list, e_list, e_dict, m_list):
 
 	Output:
 	-------
-	rho1 --- The 2x2 matrix of the RDM at qubit v
+	rho1 --- The matrix of the RDM at vertex v
 
 	"""
 
@@ -1719,13 +1740,12 @@ def apply_circuit(TN_params, BP_params, glist, normalize_PEPS=True):
 					# unitary U into a matrix M in the PTM representation that
 					# encodes the transformation
 					#
-					#                rho --> U \rho U^\dagger
+					#                A --> U^\dagger A U
 					#
 
 					U = get_gate(gname[1:], params)
 
-					M = gate_to_PTM(U)
-
+					M = gate_to_PTM(op_dagger(U))
 
 				else:
 					M = get_gate(gname, params)
@@ -1734,7 +1754,7 @@ def apply_circuit(TN_params, BP_params, glist, normalize_PEPS=True):
 				# Apply the gate to the TN
 				#
 				print()
-				print(f"Gate [{t}/{T}]: applying {gate_str} on {gstr}")
+				print(f"Gate [{t}/{T-1}]: applying {gate_str} on {gstr}")
 
 				T_list = apply_gate(TN_params, M, i, e)
 
